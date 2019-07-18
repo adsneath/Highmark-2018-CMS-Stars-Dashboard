@@ -18,7 +18,7 @@ C15 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare./Project/Measures
 ```
 
 ```{r}
-register_google(key ="AIzaSyBhhYBobdI75aXEmTTQ2yuCnb0iZK8zsr4")
+register_google(key ="")
 map <- get_map(location = "State College", zoom = 7, maptype = "roadmap", source = "google", color = "color")
 ```
 
