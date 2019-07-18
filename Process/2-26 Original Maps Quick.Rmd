@@ -1,0 +1,35 @@
+---
+title: "2-26 Original Maps Quick"
+author: "Adam Sneath"
+date: "February 26, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(stringr)
+library(sas7bdat)
+library(ggplot2)
+library(ggmap)
+library(readxl)
+knitr::opts_chunk$set(echo = TRUE)
+DMD15 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare./Project/Measures/DMD15.csv")
+C15 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare./Project/Measures/C15.csv")
+```
+
+```{r}
+register_google(key ="AIzaSyBhhYBobdI75aXEmTTQ2yuCnb0iZK8zsr4")
+map <- get_map(location = "State College", zoom = 7, maptype = "roadmap", source = "google", color = "color")
+```
+
+```{r C15 Geo Compliance}
+#jpeg("2-17-19 C15 Geo Compliance.jpg")
+ggmap(map) + geom_point(aes(x = Lon, y = Lat,  colour = Compliance, size=Denominator),data = C15, alpha = 0.7) + xlab("Latitude") + ylab("Longitude") + ggtitle("C15 Compliance by Location")
+#dev.off()
+```
+
+```{r DMD15 Geo Compliance}
+#jpeg("2-17-19 DMD15 Geo Compliance.jpg")
+ggmap(map) + geom_point(aes(x = Lon, y = Lat,  colour = Compliance, size=Denominator),data = DMD15, alpha = 0.7) + xlab("Latitude") + ylab("Longitude") + ggtitle("DMD15 Compliance by Location")
+#dev.off()
+```

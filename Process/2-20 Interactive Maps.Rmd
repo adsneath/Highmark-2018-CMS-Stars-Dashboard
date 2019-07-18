@@ -1,0 +1,57 @@
+---
+title: "2-16 Interactive Maps"
+author: "Adam Sneath"
+date: "February 16, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(leaflet)
+library(magrittr)
+library(rgdal)
+library(mapview)
+library(dplyr)
+library(spdplyr)
+library(RColorBrewer)
+library(geojsonio)
+knitr::opts_chunk$set(echo = TRUE)
+zip <- geojson_read("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/Geo/zip_pa.geojson", what = "sp")
+prac <- read.csv("18-Feb-19_practice_geocoded.csv")
+DMD15 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare./Project/Measures/DMD15.csv")
+```
+
+```{r}
+zip$Zip <- as.integer(levels(zip$GEOID10)[zip$GEOID10])
+zip@data <- data.frame(zip@data, DMD15[match(zip@data[,"Zip"], DMD15[,"Zip"]),])
+zip
+```
+
+```{r}
+
+zip2 <- zip %>% filter(is.na(Compliance) == FALSE)
+
+labels <- sprintf(as.character(zip2$Zip)) %>% lapply(htmltools::HTML)
+
+pal <- colorNumeric("Blues",zip2$Compliance)
+
+map <- leaflet() %>% addTiles() %>% addPolygons(data = zip2, stroke=FALSE,weight=2,opacity=1,color="white",smoothFactor=0.3, fillOpacity=0.8,fillColor = ~pal(zip2$Compliance),dashArray="3",highlight = highlightOptions(weight=10,color="#666",dashArray="",fillOpacity=0.6,bringToFront = FALSE),label=labels,labelOptions = labelOptions(style=list("font-weight" = "normal",padding="3px 8px"),textsize="15px",direction="auto")) %>% addCircleMarkers(data = DMD15,weight=1, fillOpacity=1, radius = 2*log10(DMD15$Denominator), clusterOptions = markerClusterOptions(), color = "black", popup = DMD15$practice_Name) %>% addLegend(pal = colorNumeric("Blues",zip2$Compliance), values = zip2$Compliance, opacity = 0.7, title = "Compliance", position = "bottomright")
+
+map
+
+```
+
+```{r View SpatialPolygonsDataFrame}
+
+range(zip$rmapshaperid)
+pal <- colorNumeric("viridis",zip$rmapshaperid)
+
+zip %>% leaflet() %>% addTiles() %>% addPolygons(stroke = FALSE, smoothFactor = 0.3, fillOpacity = 1, fillColor = ~pal(zip$rmapshaperid))
+
+```
+
+```{r Generate Lat and Lng Example, eval=FALSE}
+set.seed(2019-02-20)
+df <- data.frame(lat = runif(20, min = 39.2, max = 39.3),
+                 lng = runif(20, min = -76.6, max = -76.5))
+df %>%leaflet() %>% addTiles() %>% addMarkers()
+```

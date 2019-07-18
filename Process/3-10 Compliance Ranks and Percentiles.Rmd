@@ -1,0 +1,56 @@
+---
+title: "3-10 Compliance Ranks and Percentiles"
+author: "Adam Sneath"
+date: "March 10, 2019"
+output: pdf_document
+---
+
+```{r}
+library(dplyr)
+library(stringr)
+library(shiny)
+library(DT)
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+options(stringsAsFactors = FALSE)
+DMD15 <- read.csv("C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data3/Measures/DMD15.csv")
+C12 <- read.csv("C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data3/Measures/C12.csv")
+C14 <- read.csv("C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data3/Measures/C14.csv") 
+C15 <- read.csv("C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data3/Measures/C15.csv")
+C17 <- read.csv("C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data3/Measures/C17.csv")
+C20 <- read.csv("C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data3/Measures/C20.csv")
+```
+
+```{r}
+tib <- C12 %>% filter(Denominator >= 5)
+ggplot(tib, aes(x=Compliance)) + geom_histogram(bins = 10,col="black",fill="deepskyblue3") + ggtitle("Where Do You Stand?")
+```
+
+```{r}
+
+test2 <- DMD15 %>% filter(Denominator >= 5) %>% group_by(City) %>% summarise(Num = n()) %>% filter(Num > 2) %>% arrange(Num)
+want <- test2$City
+#want
+
+test <- DMD15 %>% filter(Denominator >= 5 & City %in% want == TRUE) %>% group_by(City) %>% select(practice_Name,Compliance) %>% arrange(City)
+#test
+
+#length(unique(test$City))
+#unique(test$City)[3]
+
+```
+
+```{r}
+
+temp <- c()
+for(i in 1:length(bits)){
+  bit <- test %>% filter(City == bits[i])
+  new <- rank(-bit$Compliance,ties.method="min")
+  temp <- append(temp,new)
+}
+
+test$City.Rank <- temp 
+test
+
+```
+

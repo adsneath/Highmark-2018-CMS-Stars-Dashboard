@@ -1,0 +1,44 @@
+---
+title: "2-16 Fix Bug"
+author: "Adam Sneath"
+date: "February 16, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(tidyr)
+library(magrittr)
+library(stringr)
+library(sas7bdat)
+knitr::opts_chunk$set(echo = TRUE)
+setwd("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project")
+#practice <- read.sas7bdat("tab1_practice_level.sas7bdat")
+#provider <- read.sas7bdat("provider_20181229.sas7bdat")
+```
+
+```{r}
+###BUG #1 FIXED WOOT WOOT
+
+#provider$mbr_count <- NULL
+#names(provider)
+#colnames(provider)[14] <- "practice_id_2"
+#colnames(provider)[3] <- "practice_id2"
+
+#join <- left_join(practice,provider,by="practice_id2")
+
+```
+
+```{r}
+
+provider[2669:2750,] 
+
+```
+
+```{r}
+practice[10283:10305,] %>% arrange(denominator)
+```
+
+```{r}
+join[10283:10328,] %>% arrange(denominator)
+```

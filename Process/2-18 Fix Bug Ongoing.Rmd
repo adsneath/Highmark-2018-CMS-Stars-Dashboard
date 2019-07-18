@@ -1,0 +1,106 @@
+---
+title: "2-18 Fix Bug Ongoing"
+author: "Adam Sneath"
+date: "February 18, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(tidyr)
+library(magrittr)
+library(stringr)
+library(sas7bdat)
+library(ggplot2)
+library(ggmap)
+knitr::opts_chunk$set(echo = TRUE)
+options(stringsAsFactors = FALSE)
+setwd("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project")
+provider <- read.sas7bdat(file = 'provider_20181229.sas7bdat')
+practice <- read.sas7bdat(file = 'tab1_practice_level.sas7bdat')
+```
+
+
+```{r}
+#Fixes merging practice bug. Same practice_id2 causes extra rows on join
+for (i in 1:(nrow(provider)-1)){
+  if (provider$practice_id2[i] == provider$practice_id2[i+1]) {
+    for (j in 1:5) {
+      if (provider$practice_id2[i] == provider$practice_id2[i+j]) {
+        provider$practice_id2[i] = "dummy"
+      }
+      else {break}
+    }
+  }
+}
+provider %>% filter(practice_id2 == "dummy")
+```
+
+```{r}
+test <- left_join(practice,provider,by="practice_id2")
+which(is.na(test$MAIN_ADDR1))
+#THIS SHOULD BE FIXED NOW 
+```
+
+```{r}
+
+provider %>% filter(practice_id2 == "001665644" | practice_id2 == "004150164" | practice_id2 == "004123567")
+
+practice %>% filter(practice_id2 == "001665644" | practice_id2 == "004150164" | practice_id2 == "004123567")
+
+#do any other practice_id2 in practice match with practice_id2 in provider, and not PRACTICE_ID (same record)?
+test <- left_join(practice,provider,by="practice_id2")
+```
+
+```{r}
+provider %>% filter(practice_id2 == "dummy")
+```
+
+```{r}
+which(is.na(provider$practice_id2))
+```
+
+```{r}
+test2 <- left_join(practice,provider,by="practice_id2")
+for( i in 1:nrow(test2)) {
+  if (test2$practice_id2[i] != practice$practice_id2[i]) {
+    print(i)
+  }
+}
+```
+
+```{r}
+practice[45057:45060,]
+test2[45057:45060,]
+provider %>% filter(practice_id2 == "002800552")
+practice %>% filter(practice_id2 == "001665644" | practice_id2 == "004150164" | practice_id2 == "004123567")
+```
+
+```{r}
+provider %>% filter(practice_id2 == "000510820")
+practice %>% filter(practice_id2 == "000510820")
+provider %>% filter(practice_id2 == "000903295")
+practice %>% filter(practice_id2 == "000903295")
+```
+
+```{r}
+practice[10303:10306,]
+```
+
+```{r}
+test[10303:10306,]
+```
+
+```{r}
+ids <- unique(practice$practice_id2)
+all(ids %in% provider$practice_id2)
+all(ids %in% provider$PRACTICE_ID)
+
+ids[1:500] %in% provider$PRACTICE_ID
+ids[500:1000] %in% provider$PRACTICE_ID
+ids[1000:1500] %in% provider$PRACTICE_ID
+ids[1500:2000] %in% provider$PRACTICE_ID
+ids[2000:2467] %in% provider$PRACTICE_ID
+
+
+```

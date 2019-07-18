@@ -1,0 +1,121 @@
+---
+title: 'Highmark Project Dashboard'
+author: "Maggie, QING WEN"
+date: "February 6, 2019"
+output: html_document
+runtime: shiny
+---
+
+```{r}
+library(shiny)
+library(shinydashboard)
+library(ggplot2)
+library(ggmap)
+library(leaflet)
+library(magrittr)
+library(rgdal)
+library(mapview)
+library(dplyr)
+library(spdplyr)
+library(RColorBrewer)
+library(geojsonio)
+library(DT)
+
+DMD15 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/Measures/DMD15.csv")
+DMD15Ranked <- read.csv("C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data3/DMD15Ranked.csv")
+```
+
+```{r Check Zeros}
+which(DMD15$Compliance == 0)
+```
+
+```{r}
+ui <- dashboardPage(
+  dashboardHeader( title = "Highmark Analytics Project",
+                   dropdownMenu(type = "message",
+                                messageItem(from = "Prof. Kolman", message = "Your homework is due on Thursday", icon = icon("id-card-alt"), time = "22:00")),
+                   dropdownMenu(type = "task",
+                                taskItem(value = 20, color = "aqua", "DMD 51"),
+                                taskItem(value = 0, color = "green", "C 15")
+                   )),
+  
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Dashboard Introduction", tabName = "introduction", icon = icon("dashboard")),
+      menuItem("DMD 15", tabName = "dmd15", icon = icon("stethoscope"), badgeLabel = "Bad", badgeColor = "red"),
+      menuItem("C 12", tabName = "c12", icon = icon("stethoscope"), badgeLabel = "OK", badgeColor = "yellow"),
+      menuItem("C 14", tabName = "c14", icon = icon("stethoscope"), badgeLabel = "OK", badgeColor = "yellow"),
+      menuItem("C 15", tabName = "c15", icon = icon("stethoscope"), badgeLabel = "OK", badgeColor = "yellow")
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      tabItem(tabName = "introduction", h1("About")),
+      tabItem(tabName = "dmd15", h1("DMD15 Statin Use in Persons with Diabetes"),
+              fluidRow(
+                column(12,
+                box(title = "Compliance by Location", status = "primary", solidHeader = T,background = "aqua",leafletOutput("plot1")),
+                box(title = "Stats", status = "primary", solidHeader = T, background = "aqua", tableOutput('tbl')),
+                box(title = "Denominator as Predictor", status = "primary", solidHeader = T,background = "aqua",plotOutput("plot2"))),
+                column(12,
+                box(title = "Best Practices", status = "primary", solidHeader = T,background = "aqua",uiOutput("best_prac")),
+                box(title = "Mean Household Income as Predictor", status = "primary", solidHeader = T,background = "aqua",plotOutput("plot3"))
+                       ))),
+           tabItem(tabName = "dmd15pa", h1("Pensylvania")),
+           tabItem(tabName = "dmd15wv", h1("West Virginia")),
+       tabItem(tabName = "c12", h1("Osteoporosis Management in Women who had a Fracture")),
+       tabItem(tabName = "c14", h1("Comprehensive Diabetes Care: Medical Attention for Nephropathy")),
+       tabItem(tabName = "c15", h1("Comprehensive Diabetes Care: HbA1c Control (<=9%) (DYNAMIC)"))
+    
+    )
+  )
+)
+```
+
+```{r Polygon Map}
+# <- leaflet() %>% addTiles() %>% addPolygons(data = zip2, stroke=FALSE,weight=2,opacity=1,color="white",smoothFactor=0.3, fillOpacity=0.8,fillColor = ~pal(zip2$Compliance),dashArray="3",highlight = highlightOptions(weight=10,color="#666",dashArray="",fillOpacity=0.6,bringToFront = FALSE),label=labels,labelOptions = labelOptions(style=list("font-weight" = "normal",padding="3px 8px"),textsize="15px",direction="auto")) %>% addCircleMarkers(data = DMD15,weight=1, fillOpacity=1, radius = 2*log10(DMD15$Denominator), clusterOptions = markerClusterOptions(), color = "black", popup = DMD15$practice_Name) %>% addLegend(pal = colorNumeric("Blues",zip2$Compliance), values = zip2$Compliance, opacity = 0.7, title = "Compliance", position = "bottomright")
+```
+
+```{r}
+
+register_google(key ="AIzaSyBhhYBobdI75aXEmTTQ2yuCnb0iZK8zsr4")
+map <- get_map(location = "State College", zoom = 7, maptype = "roadmap", source = "google", color = "color")
+
+#zip2 <- zip %>% filter(is.na(Compliance) == FALSE)
+
+pal <- colorNumeric("Blues",DMD15$Compliance)
+
+m2 <- leaflet() %>% addTiles() %>% addCircleMarkers(data = DMD15,weight=1, fillOpacity=1, radius = 1.75*log(DMD15$Denominator), color = ~pal(DMD15$Compliance), popup = DMD15$practice_Name) %>% addLegend(pal = colorNumeric("Blues",DMD15$Compliance), values = DMD15$Compliance, opacity = 0.7, title = "Compliance", position = "bottomright")
+
+m3 <- ggplot(data=DMD15) + geom_point(aes(x=DMD15$Denominator,y=DMD15$Compliance))
+
+m4 <- ggplot(DMD15Ranked, aes(x=Compliance)) + geom_histogram(bins = 10,col="black",fill="deepskyblue3") + ggtitle("Where Do You Stand?")
+
+server <- function(input,output) {
+  
+  output$table <- renderTable(DMD15Ranked)
+  
+  output$plot1 <- renderLeaflet({
+    m2
+  })
+  
+    output$plot3 <- renderPlot({
+    m4
+  })
+  
+  output$plot2 <- renderPlot({
+    m3
+  })
+  
+  output$best_prac <- renderUI({
+    tags$ul(tags$li("Initiate conversation with the patient"),tags$li("Review purpose of the medication, and emphasize its importance"),tags$li("Strategies to improve adherence:"), "1.) recommend a 90-day supply 2.) encourage the patient to enroll in an auto-fill program 3.) suggest reminder tools such as alarms, a specific storage plan for medication")
+  })
+  
+  
+}
+
+```
+
+```{r}
+shinyApp(ui, server)
+```

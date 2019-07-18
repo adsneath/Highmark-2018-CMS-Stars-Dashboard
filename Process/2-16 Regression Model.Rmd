@@ -1,0 +1,137 @@
+---
+title: "Untitled"
+author: "Adam Sneath"
+date: "February 13, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(stringr)
+library(sas7bdat)
+library(ggplot2)
+library(ggmap)
+library(readxl)
+library(car)
+knitr::opts_chunk$set(echo = TRUE)
+options(stringsAsFactors = FALSE)
+setwd("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project")
+DMD15 <- read.csv("DMD15.csv")
+C12 <- read.csv("C12.csv")
+C14 <- read.csv("C14.csv") 
+C15 <- read.csv("C15.csv")
+C17 <- read.csv("C17.csv")
+C20 <- read.csv("C20.csv")
+```
+
+
+```{r, message=FALSE}
+
+# Fill NA aggregated stars with the average value to keep R happy for now, probably more accurate to delete these...
+# for(i in 1:nrow(prac_DMD15)) {
+#   if (is.na(prac_DMD15$Aggregated[i]) == TRUE) {
+#     prac_DMD15$Aggregated[i] <- 3.6
+#   }
+# }
+
+```
+
+```{r Mult Lin Reg DMD15, message=FALSE}
+attach(DMD15)
+#ScatterPlots
+par(mfrow=c(1,2))
+plot(Denominator,Compliance,col="red",main="DMD15")
+plot(Mean_Household,Compliance,col="blue",main="DMD15")
+#Regression
+lm.fit.DMD15.A <- lm(Compliance~Denominator+Mean_Household,data=DMD15)
+summary(lm.fit.B)
+vif(lm.fit.B)
+```
+
+```{r Mult Lin Reg C12, message=FALSE}
+attach(C12)
+#ScatterPlots
+par(mfrow=c(1,2))
+plot(Denominator,Compliance,col="red",main="C12")
+plot(Mean_Household,Compliance,col="blue",main="C12")
+#Regression
+lm.fit.C12.A <- lm(Compliance~Denominator+Mean_Household,data=C12)
+summary(lm.fit.B)
+vif(lm.fit.B)
+```
+
+```{r Mult Lin Reg C14, message=FALSE}
+attach(C14)
+#ScatterPlots
+par(mfrow=c(1,2))
+plot(Denominator,Compliance,col="red",main="C14")
+plot(Mean_Household,Compliance,col="blue",main="C14")
+#Regression
+lm.fit.B <- lm(Compliance~Denominator+Mean_Household,data=C14)
+summary(lm.fit.B)
+vif(lm.fit.B)
+```
+
+```{r Mult Lin Reg C15, message=FALSE}
+attach(C15)
+#ScatterPlots
+par(mfrow=c(1,2))
+plot(Denominator,Compliance,col="red",main="C15")
+plot(Mean_Household,Compliance,col="blue",main="C15")
+#Regression
+lm.fit.B <- lm(Compliance~Denominator+Mean_Household,data=C15)
+summary(lm.fit.B)
+vif(lm.fit.B)
+```
+
+```{r Mult Lin Reg C17, message=FALSE}
+attach(C17)
+#ScatterPlots
+par(mfrow=c(1,2))
+plot(Denominator,Compliance,col="red",main="C17")
+plot(Mean_Household,Compliance,col="blue",main="C17")
+#Regression
+lm.fit.B <- lm(Compliance~Denominator+Mean_Household,data=C17)
+summary(lm.fit.B)
+vif(lm.fit.B)
+```
+
+```{r Mult Lin Reg C20, message=FALSE}
+attach(C20)
+#ScatterPlots
+par(mfrow=c(1,2))
+plot(Denominator,Compliance,col="red")
+plot(Mean_Household,Compliance,col="blue")
+#Regression
+lm.fit.B <- lm(Compliance~Denominator+Mean_Household,data=C20)
+summary(lm.fit.B)
+vif(lm.fit.B)
+```
+
+## NOT USING THIS FOR NOW
+
+```{r Rank Low Mid High Income by Zip}
+# for(i in 1:nrow(zip_inc)) {
+#   if (zip_inc$Mean[i] < 50000) {
+#     zip_inc$Level[i] <- "Low"
+#   }
+#   else if (zip_inc$Mean[i] < 100000){
+#     zip_inc$Level[i] <- "Middle"
+#   }
+#   else {zip_inc$Level[i] <- "High"}
+# }
+```
+
+## NOT USING THIS FOR NOW
+
+```{r Join Levels to Practice Data}
+# colnames(prac)[98] <- "Zip"
+# prac <- inner_join(prac,zip_inc,by="Zip")
+# head(prac)
+# attach(prac)
+# prac2 <- data.frame(ID = practice_id2, Lat = lat, Lon = lon, Mean_House_Income = Mean, Med_House_Income = Median, Level = Level ,Zip_Pop = Pop, State = MAIN_STATE, City = MAIN_CITY, Practice_Name = practice_name2, Count = mbr_count, Measure = measure_ds, Weight = measure_wt, Denominator = denominator, Numerator = numerator, Compliance = compliance, Star3_cut = star3, Star4_cut = star4, Star5_cut = star5, Aggregated = aggr_star_rating, Stars = star_rating, Need_for3 = needed3, Need_for4 = needed4, Need_for5 = needed5, Gap_worth = gap_worth, Address = MAIN_ADDR1 , Zip = MAIN_ZIPCODE, Health_Sys = health_system_name, Host_Sys = hospital_system_name)
+# #head(prac2,20)
+# prac_DMD15 <- prac2 %>% filter(Measure == "DMD15: Statin Use in Persons with Diabetes") 
+# head(prac_DMD15)
+```
+

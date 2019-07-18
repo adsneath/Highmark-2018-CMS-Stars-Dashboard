@@ -1,0 +1,321 @@
+---
+title: "2-16 Clean Data for Visuals"
+author: "Adam Sneath"
+date: "February 14, 2019"
+output: pdf_document
+---
+
+## Filter the data to individual .csv files for C12, C14, C15, C17, C20
+### Use as a template for filtering to any specific measure(s)
+### Note for Pitt students: All .csv files will be uploaded to the box folder "Data (see README)" for access on your own device or generally in R Studio 
+
+### The measures are defined as follows: 
+
+#### C12: Osteoporosis Management in Women Who Had a Fracture - The percentage of female Members age 67 - 85 who suffered a fracture and who had either a bone mineral density (BMD) test or prescription for a drug to treat or prevent osteoporosis in the six months after the fracture. 
+
+#### C14: Comprehensive Diabetes Care: Medical Attention for Nephropathy (kidney damage) - The percentage of diabetic Members age 18 - 75 who had medical attention for nephropathy.
+
+#### C15: Comprehensive Diabetes Care: HbA1c Control (<=9%) - The percentage of Members age 18 - 75 with diabetes (type 1 or type 2) whose most recent Hemoglobin A1C is <=9.0%. 
+
+#### C17: Disease-Modifying Anti-Rheumatic Drug Therapy for Rheumatoid Arthritis - The percentage of Members age 18 and older who were diagnosed with rheumatoid arthritis and who were dispensed at least one ambulatory prescription for a disease-modifying anti-rheumatic drug (DMARD). 
+
+#### C20: Medication Reconciliation Post-Discharge - The percentage of discharges from January 1-December 1 of the measurement year for Members 18 years of age and older for whom medications were reconciled the date of discharge through 30 days after discharge (31 total days). 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(stringr)
+library(sas7bdat)
+library(ggplot2)
+library(ggmap)
+library(readxl)
+knitr::opts_chunk$set(echo = TRUE)
+options(stringsAsFactors = FALSE)
+setwd("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project")
+prac <- read.csv("18-Feb-19_practice_geocoded.csv")
+zip_inc <- read_excel("2006-2010_US_income_by_zip_UMICH.xlsx")
+```
+
+```{r Find Missing Zips}
+setdiff(prac$Zip,zip_inc$Zip)
+```
+
+```{r Join Household Income Data to practice Data by Zipcode}
+colnames(prac)[89] <- "Zip"
+#Calling the practice data, with income values added "fin"
+fin <- left_join(prac,zip_inc,by="Zip")
+#Fix id's to be like original (either read or write csv functions dropped the leading 0s somewhere)
+fin$practice_id2 <- str_pad(fin$practice_id2,9,"left","0")
+names(prac)
+head(fin)
+```
+
+```{r Filter Data to Underperforming Measures and Ditch ZERO or NA Denominators}
+
+C12 <- fin %>% filter(measure_ds == "C12: Osteoporosis Management in Women who had a Fracture")
+C14 <- fin %>% filter(measure_ds == "C14: Comprehensive Diabetes Care: Medical Attention for Nephropathy")
+C15 <- fin %>% filter(measure_ds == "C15: Comprehensive Diabetes Care: HbA1c Control (<=9%)")
+C17 <- fin %>% filter(measure_ds == "C17: Disease Modifying Anti-Rheumatic Drug Therapy for Rheumatoid Arthritis")
+C20 <- fin %>% filter(measure_ds == "C20: Medication Reconciliation Post-Discharge")
+DMD15 <- fin %>% filter(measure_ds == "DMD15: Statin Use in Persons with Diabetes")
+
+#Check for NA Denominator
+# length(which(is.na(C12$denominator)))
+# length(which(is.na(C14$denominator)))
+# length(which(is.na(C15$denominator)))
+# length(which(is.na(C17$denominator)))
+#C20 is the only one with any NA denominators, comment out next line and rerun to see
+C20 <- C20 %>% filter(is.na(denominator) == FALSE)
+# length(which(is.na(C20$denominator)))
+# length(which(is.na(DMD15$denominator)))
+#Fin has na denominators for measures outside these guys above
+# length(which(is.na(fin$denominator)))
+
+#Filter out ZERO denominators
+C12 <- C12 %>% filter(denominator != 0)
+C14 <- C14 %>% filter(denominator != 0) 
+C15 <- C15 %>% filter(denominator != 0) 
+C17 <- C17 %>% filter(denominator != 0)
+C20 <- C20 %>% filter(denominator != 0)
+DMD15 <- DMD15 %>% filter(denominator != 0)
+
+# length(which(is.na(C12$compliance)))
+# length(which(is.na(C14$compliance)))
+# length(which(is.na(C15$compliance)))
+# length(which(is.na(C17$compliance)))
+# length(which(is.na(C20$compliance)))
+# length(which(is.na(DMD15$compliance)))
+
+```
+
+```{r Trim All To Relevant Columns and Rename}
+
+#names(C12)
+
+C12 <- C12[,c(2,52,102,103,89,104,105,106,11,12,22,5,6,36,13:16,40:43,47,48,85:88,64,65,67,74,75,78,101,3)]
+colnames(C12) <- c("ID","practice_Name","Lon","Lat","Zip","Med_Household","Mean_Household","Pop_of_Zip","Measure","Weight","Compliance","Denominator","Numerator","Aggregate_Stars","Cut2","Cut3","Cut4","Cut5","Needed2","Needed3","Needed4","Needed5","Needed_Next","Gap_Worth","Address","Address_2","City","State","Program","Entity","Health_System","FreedomBlue","SecurityBlue","WV_FreedomBlue","Stars_Par","practice_Mbr_Count")
+
+C14 <- C14[,c(2,52,102,103,89,104,105,106,11,12,22,5,6,36,13:16,40:43,47,48,85:88,64,65,67,74,75,78,101,3)]
+colnames(C14) <- c("ID","practice_Name","Lon","Lat","Zip","Med_Household","Mean_Household","Pop_of_Zip","Measure","Weight","Compliance","Denominator","Numerator","Aggregate_Stars","Cut2","Cut3","Cut4","Cut5","Needed2","Needed3","Needed4","Needed5","Needed_Next","Gap_Worth","Address","Address_2","City","State","Program","Entity","Health_System","FreedomBlue","SecurityBlue","WV_FreedomBlue","Stars_Par","practice_Mbr_Count")
+
+C15 <- C15[,c(2,52,102,103,89,104,105,106,11,12,22,5,6,36,13:16,40:43,47,48,85:88,64,65,67,74,75,78,101,3)]
+colnames(C15) <- c("ID","practice_Name","Lon","Lat","Zip","Med_Household","Mean_Household","Pop_of_Zip","Measure","Weight","Compliance","Denominator","Numerator","Aggregate_Stars","Cut2","Cut3","Cut4","Cut5","Needed2","Needed3","Needed4","Needed5","Needed_Next","Gap_Worth","Address","Address_2","City","State","Program","Entity","Health_System","FreedomBlue","SecurityBlue","WV_FreedomBlue","Stars_Par","practice_Mbr_Count")
+
+C17 <- C17[,c(2,52,102,103,89,104,105,106,11,12,22,5,6,36,13:16,40:43,47,48,85:88,64,65,67,74,75,78,101,3)]
+colnames(C17) <- c("ID","practice_Name","Lon","Lat","Zip","Med_Household","Mean_Household","Pop_of_Zip","Measure","Weight","Compliance","Denominator","Numerator","Aggregate_Stars","Cut2","Cut3","Cut4","Cut5","Needed2","Needed3","Needed4","Needed5","Needed_Next","Gap_Worth","Address","Address_2","City","State","Program","Entity","Health_System","FreedomBlue","SecurityBlue","WV_FreedomBlue","Stars_Par","practice_Mbr_Count")
+
+C20 <- C20[,c(2,52,102,103,89,104,105,106,11,12,22,5,6,36,13:16,40:43,47,48,85:88,64,65,67,74,75,78,101,3)]
+colnames(C20) <- c("ID","practice_Name","Lon","Lat","Zip","Med_Household","Mean_Household","Pop_of_Zip","Measure","Weight","Compliance","Denominator","Numerator","Aggregate_Stars","Cut2","Cut3","Cut4","Cut5","Needed2","Needed3","Needed4","Needed5","Needed_Next","Gap_Worth","Address","Address_2","City","State","Program","Entity","Health_System","FreedomBlue","SecurityBlue","WV_FreedomBlue","Stars_Par","practice_Mbr_Count")
+
+DMD15 <- DMD15[,c(2,52,102,103,89,104,105,106,11,12,22,5,6,36,13:16,40:43,47,48,85:88,64,65,67,74,75,78,101,3)]
+colnames(DMD15) <- c("ID","practice_Name","Lon","Lat","Zip","Med_Household","Mean_Household","Pop_of_Zip","Measure","Weight","Compliance","Denominator","Numerator","Aggregate_Stars","Cut2","Cut3","Cut4","Cut5","Needed2","Needed3","Needed4","Needed5","Needed_Next","Gap_Worth","Address","Address_2","City","State","Program","Entity","Health_System","FreedomBlue","SecurityBlue","WV_FreedomBlue","Stars_Par","practice_Mbr_Count")
+```
+
+```{r}
+names(DMD15)
+names(test1)
+hail_mary <- left_join(test1,DMD15,by)
+```
+
+```{r Rank Measure-Specific Compliance By City -- yeah}
+
+##DMD15
+tib1 <- DMD15 %>% filter(Denominator >= 5) %>% group_by(City) %>% summarise(Num = n()) %>% filter(Num > 2) %>% arrange(Num)
+want1 <- tib1$City
+
+test1 <- DMD15 %>% filter(Denominator >= 5 & City %in% want1 == TRUE) %>% group_by(City) %>% select(Practice_Name = practice_Name,Compliance,Denominator,Med_Household,Aggregate_Stars,Address,Needed4,Needed5) %>% arrange(City)
+test1
+
+bits1 <- unique(test1$City)
+
+temp1 <- c()
+for(i in 1:length(bits1)){
+  bit <- test1 %>% filter(City == bits1[i])
+  new <- rank(-bit$Compliance,ties.method="min")
+  temp1 <- append(temp1,new)
+}
+
+test1$City.Rank <- temp1 
+
+##C12
+
+tib2 <- C12 %>% filter(Denominator >= 5) %>% group_by(City) %>% summarise(Num = n()) %>% filter(Num > 2) %>% arrange(Num)
+want2 <- tib2$City
+
+test2 <- C12 %>% filter(Denominator >= 5 & City %in% want1 == TRUE) %>% group_by(City) %>% select(Practice_Name = practice_Name,Compliance,Denominator,Med_Household,Aggregate_Stars,Address,Needed4,Needed5) %>% arrange(City)
+test2
+
+bits2 <- unique(test2$City)
+
+temp2 <- c()
+for(i in 1:length(bits2)){
+  bit <- test2 %>% filter(City == bits2[i])
+  new <- rank(-bit$Compliance,ties.method="min")
+  temp2 <- append(temp2,new)
+}
+
+test2$City.Rank <- temp2
+test2
+
+##C14
+
+tib3 <- C14 %>% filter(Denominator >= 5) %>% group_by(City) %>% summarise(Num = n()) %>% filter(Num > 2) %>% arrange(Num)
+want3 <- tib3$City
+
+test3 <- C14 %>% filter(Denominator >= 5 & City %in% want1 == TRUE) %>% group_by(City) %>% select(Practice_Name = practice_Name,Compliance,Denominator,Med_Household,Aggregate_Stars,Address,Needed4,Needed5) %>% arrange(City)
+
+bits3 <- unique(test3$City)
+
+temp3 <- c()
+for(i in 1:length(bits3)){
+  bit <- test3 %>% filter(City == bits3[i])
+  new <- rank(-bit$Compliance,ties.method="min")
+  temp3 <- append(temp3,new)
+}
+
+test3$City.Rank <- temp3
+
+##C15
+
+tib4 <- C15 %>% filter(Denominator >= 5) %>% group_by(City) %>% summarise(Num = n()) %>% filter(Num > 2) %>% arrange(Num)
+want4 <- tib4$City
+
+test4 <- C15 %>% filter(Denominator >= 5 & City %in% want1 == TRUE) %>% group_by(City) %>% select(Practice_Name = practice_Name,Compliance,Denominator,Med_Household,Aggregate_Stars,Address,Needed4,Needed5) %>% arrange(City)
+
+bits4 <- unique(test4$City)
+
+temp4 <- c()
+for(i in 1:length(bits4)){
+  bit <- test4 %>% filter(City == bits4[i])
+  new <- rank(-bit$Compliance,ties.method="min")
+  temp4 <- append(temp4,new)
+}
+
+test4$City.Rank <- temp4
+
+##C17
+
+tib5 <- C17 %>% filter(Denominator >= 5) %>% group_by(City) %>% summarise(Num = n()) %>% filter(Num > 2) %>% arrange(Num)
+want5 <- tib5$City
+
+test5 <- C17 %>% filter(Denominator >= 5 & City %in% want1 == TRUE) %>% group_by(City) %>% select(Practice_Name = practice_Name,Compliance,Denominator,Med_Household,Aggregate_Stars,Address,Needed4,Needed5) %>% arrange(City)
+
+bits5 <- unique(test5$City)
+
+temp5 <- c()
+for(i in 1:length(bits5)){
+  bit <- test5 %>% filter(City == bits5[i])
+  new <- rank(-bit$Compliance,ties.method="min")
+  temp5 <- append(temp5,new)
+}
+
+test5$City.Rank <- temp5
+
+##C20
+
+tib6 <- C20 %>% filter(Denominator >= 5) %>% group_by(City) %>% summarise(Num = n()) %>% filter(Num > 2) %>% arrange(Num)
+want6 <- tib6$City
+
+test6 <- C20 %>% filter(Denominator >= 5 & City %in% want1 == TRUE) %>% group_by(City) %>% select(Practice_Name = practice_Name,Compliance,Denominator,Med_Household,Aggregate_Stars,Address,Needed4,Needed5) %>% arrange(City)
+
+bits6 <- unique(test6$City)
+
+temp6 <- c()
+for(i in 1:length(bits6)){
+  bit <- test6 %>% filter(City == bits6[i])
+  new <- rank(-bit$Compliance,ties.method="min")
+  temp6 <- append(temp6,new)
+}
+
+test6$City.Rank <- temp6
+```
+
+```{r}
+
+test1 <- test1[,c(1,2,10,3,6,4,7,8,9,5)]
+test2 <- test2[,c(1,2,10,3,6,4,7,8,9,5)]
+test3 <- test3[,c(1,2,10,3,6,4,7,8,9,5)]
+test4 <- test4[,c(1,2,10,3,6,4,7,8,9,5)]
+test5 <- test5[,c(1,2,10,3,6,4,7,8,9,5)]
+test6 <- test6[,c(1,2,10,3,6,4,7,8,9,5)]
+
+names(test4)
+```
+
+```{r Export to .csv}
+write.csv(test2, file="C12Ranked.csv", row.names = FALSE)
+write.csv(test3, file="C14Ranked.csv", row.names = FALSE)
+write.csv(test4, file="C15Ranked.csv", row.names = FALSE)
+write.csv(test5, file="C17Ranked.csv", row.names = FALSE)
+write.csv(test6, file="C20Ranked.csv", row.names = FALSE)
+write.csv(test1, file="DMD15Ranked.csv", row.names = FALSE)
+```
+
+```{r View 'em}
+head(C12) 
+head(C14)
+head(C15)
+head(C17)
+head(C20)
+head(DMD15)
+```
+
+```{r Compare Denominators just curious}
+#Compare Summed Denominators
+cat("\nsum C12 is:",sum(C12$Denominator),"sum C14 is:",sum(C14$Denominator),"sum C15 is:",sum(C15$Denominator),"sum C17 is:",sum(C17$Denominator),"sum C20 is:",sum(C20$Denominator,na.rm =TRUE),"sum DMD15 is:",sum(DMD15$Denominator),"\n")
+#Max and Mins
+max(C12$Denominator)
+min(C12$Denominator)
+max(C14$Denominator)
+min(C14$Denominator)
+max(C15$Denominator)
+min(C15$Denominator)
+max(C17$Denominator)
+min(C17$Denominator)
+max(C20$Denominator)
+min(C20$Denominator)
+max(DMD15$Denominator)
+min(DMD15$Denominator)
+```
+
+```{r Prep Map}
+#xxxxxxx_Your_API_Key_Here_xxxxxxxxxx
+register_google(key ="xxxxxxx_Your_API_Key_Here_xxxxxxxxxx")
+map <- get_map(location = "State College", zoom = 7, maptype = "roadmap", source = "google", color = "color")
+```
+
+```{r C12 Geo Compliance}
+#jpeg("2-17-19 C12 Geo Compliance.jpg")
+ggmap(map) + geom_point(aes(x = Lon, y = Lat,  colour = Compliance, size=Denominator),data = C12, alpha = 0.7) + xlab("Latitude") + ylab("Longitude") + ggtitle("C12 Compliance by Location")
+#dev.off()
+```
+
+```{r C14 Geo Compliance}
+#jpeg("2-17-19 C14 Geo Compliance.jpg")
+ggmap(map) + geom_point(aes(x = Lon, y = Lat,  colour = Compliance, size=Denominator),data = C14, alpha = 0.7) + xlab("Latitude") + ylab("Longitude") + ggtitle("C14 Compliance by Location")
+#dev.off()
+```
+
+```{r C15 Geo Compliance}
+#jpeg("2-17-19 C15 Geo Compliance.jpg")
+ggmap(map) + geom_point(aes(x = Lon, y = Lat,  colour = Compliance, size=Denominator),data = C15, alpha = 0.7) + xlab("Latitude") + ylab("Longitude") + ggtitle("C15 Compliance by Location")
+#dev.off()
+```
+
+```{r C17 Geo Compliance}
+#jpeg("2-17-19 C17 Geo Compliance.jpg")
+ggmap(map) + geom_point(aes(x = Lon, y = Lat,  colour = Compliance, size=Denominator),data = C17, alpha = 0.7) + xlab("Latitude") + ylab("Longitude") + ggtitle("C17 Compliance by Location")
+#dev.off()
+```
+
+```{r C20 Geo Compliance}
+#jpeg("2-17-19 C20 Geo Compliance.jpg")
+ggmap(map) + geom_point(aes(x = Lon, y = Lat,  colour = Compliance, size=Denominator),data = C20, alpha = 0.7) + xlab("Latitude") + ylab("Longitude") + ggtitle("C20 Compliance by Location")
+#dev.off()
+```
+
+```{r DMD15 Geo Compliance}
+#jpeg("2-17-19 DMD15 Geo Compliance.jpg")
+ggmap(map) + geom_point(aes(x = Lon, y = Lat,  colour = Compliance, size=Denominator),data = DMD15, alpha = 0.7) + xlab("Latitude") + ylab("Longitude") + ggtitle("DMD15 Compliance by Location")
+#dev.off()
+```

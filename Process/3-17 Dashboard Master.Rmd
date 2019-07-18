@@ -1,0 +1,331 @@
+---
+title: 'Highmark Project Dashboard'
+author: "Maggie, QING WEN"
+date: "February 6, 2019"
+output: html_document
+runtime: shiny
+---
+
+```{r}
+library(shiny)
+library(shinydashboard)
+library(ggplot2)
+library(ggmap)
+library(leaflet)
+library(leaflet.extras)
+library(magrittr)
+library(rgdal)
+library(mapview)
+library(dplyr)
+library(spdplyr)
+library(RColorBrewer)
+library(geojsonio)
+library(DT)
+
+DMD15 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/Measures/DMD15.csv")
+C12 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/Measures/C12.csv")
+C14 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/Measures/C14.csv")
+C15 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/Measures/C15.csv")
+C17 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/Measures/C17.csv")
+C20 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/Measures/C20.csv")
+DMD15Ranked <- read.csv("C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data3/DMD15Ranked.csv")
+C12Ranked <- read.csv("C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data3/C12Ranked.csv")
+C14Ranked <- read.csv("C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data3/C14Ranked.csv")
+C15Ranked <- read.csv("C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data3/C15Ranked.csv")
+C17Ranked <- read.csv("C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data3/C17Ranked.csv")
+C20Ranked <- read.csv("C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data3/C20Ranked.csv")
+```
+
+```{r Configure and Test Map}
+
+mapDMD15 <- leaflet() %>% addProviderTiles(providers$Thunderforest.Transport) %>% addSearchOSM() %>% addCircleMarkers(data = DMD15,weight=1, fillOpacity=1, radius = 1.9*log(DMD15$Denominator), color = ~palDMD15(DMD15$Compliance), popup = DMD15$practice_Name) %>% addLegend(pal = colorNumeric("RdYlGn",DMD15$Compliance), values = DMD15$Compliance, opacity = 0.7, title = "Compliance", position = "bottomright")
+
+mapDMD15
+```
+
+```{r Runtime}
+register_google(key ="AIzaSyBhhYBobdI75aXEmTTQ2yuCnb0iZK8zsr4")
+map <- get_map(location = "State College", zoom = 7, maptype = "roadmap", source = "google", color = "color")
+
+palDMD15 <- colorNumeric("RdYlGn",DMD15$Compliance)
+palC12 <- colorNumeric("RdYlGn",C12$Compliance)
+palC14 <- colorNumeric("RdYlGn",C14$Compliance)
+palC15 <- colorNumeric("RdYlGn",C15$Compliance)
+palC17 <- colorNumeric("RdYlGn",C17$Compliance)
+palC20 <- colorNumeric("RdYlGn",C20$Compliance)
+
+#Define plots here
+
+mapDMD15 <- leaflet() %>% addTiles() %>% addSearchOSM() %>% addCircleMarkers(data = DMD15,weight=1, fillOpacity=1, radius = 1.9*log(DMD15$Denominator), color = ~palDMD15(DMD15$Compliance), popup = DMD15$practice_Name) %>% addLegend(pal = colorNumeric("RdYlGn",DMD15$Compliance), values = DMD15$Compliance, opacity = 0.7, title = "Compliance", position = "bottomright")
+
+mapC12 <- leaflet() %>% addTiles() %>% addSearchOSM() %>% addCircleMarkers(data = C12,weight=1, fillOpacity=1, radius = 1.9*log(1.25*C12$Denominator), color = ~palC12(C12$Compliance), popup = C12$practice_Name) %>% addLegend(pal = colorNumeric("RdYlGn",C12$Compliance), values = C12$Compliance, opacity = 0.7, title = "Compliance", position = "bottomright")
+
+mapC14 <- leaflet() %>% addTiles() %>% addSearchOSM() %>% addCircleMarkers(data = C14,weight=1, fillOpacity=1, radius = 1.9*log(C14$Denominator), color = ~palC14(C14$Compliance), popup = C14$practice_Name) %>% addLegend(pal = colorNumeric("RdYlGn",C14$Compliance), values = C14$Compliance, opacity = 0.7, title = "Compliance", position = "bottomright")
+
+mapC15 <- leaflet() %>% addTiles() %>% addSearchOSM() %>% addCircleMarkers(data = C15,weight=1, fillOpacity=1, radius = 1.9*log(C15$Denominator), color = ~palC15(C15$Compliance), popup = C15$practice_Name) %>% addLegend(pal = colorNumeric("RdYlGn",C15$Compliance), values = C15$Compliance, opacity = 0.7, title = "Compliance", position = "bottomright")
+
+mapC17 <- leaflet() %>% addTiles() %>% addSearchOSM() %>% addCircleMarkers(data = C17,weight=1, fillOpacity=1, radius = 2.1*log(C17$Denominator), color = ~palC17(C17$Compliance), popup = C17$practice_Name) %>% addLegend(pal = colorNumeric("RdYlGn",C17$Compliance), values = C17$Compliance, opacity = 0.7, title = "Compliance", position = "bottomright")
+
+mapC20 <- leaflet() %>% addTiles() %>% addSearchOSM() %>% addCircleMarkers(data = C20,weight=1, fillOpacity=1, radius = 1.9*log(C20$Denominator), color = ~palC20(C20$Compliance), popup = C20$practice_Name) %>% addLegend(pal = colorNumeric("RdYlGn",C20$Compliance), values = C20$Compliance, opacity = 0.7, title = "Compliance", position = "bottomright")
+
+scatterDMD15 <- ggplot(data=DMD15) + geom_point(aes(x=DMD15$Denominator,y=DMD15$Compliance))
+
+scatterC12 <- ggplot(data=C12) + geom_point(aes(x=C12$Denominator,y=C12$Compliance))
+
+scatterC14 <- ggplot(data=C14) + geom_point(aes(x=C14$Denominator,y=C14$Compliance))
+
+scatterC15 <- ggplot(data=C15) + geom_point(aes(x=C15$Denominator,y=C15$Compliance))
+
+scatterC17 <- ggplot(data=C17) + geom_point(aes(x=C17$Denominator,y=C17$Compliance))
+
+scatterC20 <- ggplot(data=C20) + geom_point(aes(x=C20$Denominator,y=C20$Compliance))
+
+histoDMD15 <- ggplot(DMD15Ranked, aes(x=Compliance)) + geom_histogram(bins = 10,col="black",fill="deepskyblue3") + ggtitle("Where Do You Stand?")
+
+histoC12 <- ggplot(C12Ranked, aes(x=Compliance)) + geom_histogram(bins = 10,col="black",fill="deepskyblue3") + ggtitle("Where Do You Stand?")
+
+histoC14 <- ggplot(C14Ranked, aes(x=Compliance)) + geom_histogram(bins = 10,col="black",fill="deepskyblue3") + ggtitle("Where Do You Stand?")
+
+histoC15 <- ggplot(C15Ranked, aes(x=Compliance)) + geom_histogram(bins = 10,col="black",fill="deepskyblue3") + ggtitle("Where Do You Stand?")
+
+histoC17 <- ggplot(C17Ranked, aes(x=Compliance)) + geom_histogram(bins = 10,col="black",fill="deepskyblue3") + ggtitle("Where Do You Stand?")
+
+histoC20 <- ggplot(C20Ranked, aes(x=Compliance)) + geom_histogram(bins = 10,col="black",fill="deepskyblue3") + ggtitle("Where Do You Stand?")
+
+tabDMD15 <- datatable(DMD15Ranked,extensions = "Responsive",caption="Showing Denominator > 4 & City > 2")
+
+tabC12 <- datatable(C12Ranked,extensions = "Responsive",caption="Showing Denominator > 4 & City > 2")
+
+tabC14 <- datatable(C14Ranked,extensions = "Responsive",caption="Showing Denominator > 4 & City > 2")
+
+tabC15 <- datatable(C15Ranked,extensions = "Responsive",caption="Showing Denominator > 4 & City > 2")
+
+tabC17 <- datatable(C17Ranked,extensions = "Responsive",caption="Showing Denominator > 4 & City > 2")
+
+tabC20 <- datatable(C20Ranked,extensions = "Responsive",caption="Showing Denominator > 4 & City > 2")
+
+bestDMD15 <- renderUI({tags$ul(tags$li("Initiate conversation with the patient"),tags$li("Review purpose of the medication, and emphasize its importance"),tags$li("Strategies to improve adherence:"), "1.) recommend a 90-day supply 2.) encourage the patient to enroll in an auto-fill program 3.) suggest reminder tools such as alarms, a specific storage plan for medication")})
+
+bestC12 <- renderUI({tags$ul(tags$li("Stuff Here"),tags$li("More Stuff"),tags$li("Things"), "1.) This 2.) Thing 3.) Here")})
+
+bestC14 <- renderUI({tags$ul(tags$li("Stuff Here"),tags$li("More Stuff"),tags$li("Things"), "1.) This 2.) Thing 3.) Here")})
+
+bestC15 <- renderUI({tags$ul(tags$li("Stuff Here"),tags$li("More Stuff"),tags$li("Things"), "1.) This 2.) Thing 3.) Here")})
+
+bestC17 <- renderUI({tags$ul(tags$li("Stuff Here"),tags$li("More Stuff"),tags$li("Things"), "1.) This 2.) Thing 3.) Here")})
+
+bestC20 <- renderUI({tags$ul(tags$li("Stuff Here"),tags$li("More Stuff"),tags$li("Things"), "1.) This 2.) Thing 3.) Here")})
+
+```
+
+```{r Good Dash}
+
+#comments show possible additions to the code below
+
+ui <- dashboardPage(
+  dashboardHeader(
+    #dropdownMenu(type="message"), dropdownMenu(type="task")
+    title = "Highmark Analytics Project"
+  ),
+  dashboardSidebar(  
+    sidebarMenu(
+      #menuItem("Dashboard Introduction", tabName = "introduction", icon = icon("dashboard"))
+      menuItem("DMD 15", tabName = "dmd15", icon = icon("stethoscope"), badgeLabel = "Bad", badgeColor = "red"),
+      menuItem("C 12", tabName = "C12", icon = icon("stethoscope"), badgeLabel = "Bad", badgeColor = "red"),
+      menuItem("C 14", tabName = "c14", icon = icon("stethoscope"), badgeLabel = "Bad", badgeColor = "red"),
+      menuItem("C 15", tabName = "c15", icon = icon("stethoscope"), badgeLabel = "Bad", badgeColor = "red"),
+      menuItem("C 17", tabName = "c17", icon = icon("stethoscope"), badgeLabel = "Bad", badgeColor = "red"),
+      menuItem("C 20", tabName = "C20", icon = icon("stethoscope"), badgeLabel = "Bad", badgeColor = "red")
+      )
+  ),
+  #Begin Old Stuff
+  #End Old Stuff
+  dashboardBody(
+    tabItems(
+      tabItem(tabName = "introduction", h1("About")),
+      tabItem(tabName = "dmd15", h1("DMD15 Statin Use in Persons with Diabetes"),
+              fluidRow(box(title = "Compliance by Location", status = "primary", solidHeader = T, background = "aqua",leafletOutput("mapDMD15")),
+                       box(title = "Compliance Histogram", status = "primary", solidHeader = T,background = "aqua",plotOutput("histoDMD15"))
+              ),
+              fluidRow(box(DT::dataTableOutput('tabDMD15'),width = 12)
+              ),
+              fluidRow(box(title = "Best Practices", status = "primary", solidHeader = T,background = "aqua",uiOutput("bestDMD15")),
+                       box(title = "Denominator as Predictor", status = "primary", solidHeader = T,background = "aqua",plotOutput("regDMD15")) 
+              )
+      ),
+      tabItem(tabName = "C12", h1(" C12 Osteoporosis Management in Women who had a Fracture"),
+              fluidRow(box(title = "Compliance by Location", status = "primary", solidHeader = T, background = "aqua",leafletOutput("mapC12")),
+                       box(title = "Compliance Histogram", status = "primary", solidHeader = T,background = "aqua",plotOutput("histoC12"))
+              ),
+              fluidRow(box(DT::dataTableOutput('tabC12'),width = 12)
+              ),
+              fluidRow(box(title = "Best Practices", status = "primary", solidHeader = T,background = "aqua",uiOutput("bestC12")),
+                       box(title = "Denominator as Predictor", status = "primary", solidHeader = T,background = "aqua",plotOutput("regC12")) 
+              )
+      ),
+      tabItem(tabName = "c14", h1("C14 Comprehensive Diabetes Care: Medical Attention for Nephropathy"),
+              fluidRow(box(title = "Compliance by Location", status = "primary", solidHeader = T, background = "aqua",leafletOutput("mapC14")),
+                       box(title = "Compliance Histogram", status = "primary", solidHeader = T,background = "aqua",plotOutput("histoC14"))
+              ),
+              fluidRow(box(DT::dataTableOutput('tabC14'),width = 12)
+              ),
+              fluidRow(box(title = "Best Practices", status = "primary", solidHeader = T,background = "aqua",uiOutput("bestC14")),
+                       box(title = "Denominator as Predictor", status = "primary", solidHeader = T,background = "aqua",plotOutput("regC14")) 
+              )
+      ),
+      tabItem(tabName = "c15", h1("C15 Comprehensive Diabetes Care: HbA1c Control (<=9%) (DYNAMIC)"),
+              fluidRow(box(title = "Compliance by Location", status = "primary", solidHeader = T, background = "aqua",leafletOutput("mapC15")),
+                       box(title = "Compliance Histogram", status = "primary", solidHeader = T,background = "aqua",plotOutput("histoC15"))
+              ),
+              fluidRow(box(DT::dataTableOutput('tabC15'),width = 12)
+              ),
+              fluidRow(box(title = "Best Practices", status = "primary", solidHeader = T,background = "aqua",uiOutput("bestC15")),
+                       box(title = "Denominator as Predictor", status = "primary", solidHeader = T,background = "aqua",plotOutput("regC15")) 
+              )
+      ),
+      tabItem(tabName = "c17", h1("C17 Disease-Modifying Anti-Rheumatic Drug Therapy for Rheumatoid Arthritis"),
+              fluidRow(box(title = "Compliance by Location", status = "primary", solidHeader = T, background = "aqua",leafletOutput("mapC17")),
+                       box(title = "Compliance Histogram", status = "primary", solidHeader = T,background = "aqua",plotOutput("histoC17"))
+              ),
+              fluidRow(box(DT::dataTableOutput('tabC17'),width = 12)
+              ),
+              fluidRow(box(title = "Best Practices", status = "primary", solidHeader = T,background = "aqua",uiOutput("bestC17")),
+                       box(title = "Denominator as Predictor", status = "primary", solidHeader = T,background = "aqua",plotOutput("regC17")) 
+              )
+      ),
+      tabItem(tabName = "C20", h1("C20 Medication Reconciliation Post-Discharge"),
+              fluidRow(box(title = "Compliance by Location", status = "primary", solidHeader = T, background = "aqua",leafletOutput("mapC20")),
+                       box(title = "Compliance Histogram", status = "primary", solidHeader = T,background = "aqua",plotOutput("histoC20"))
+              ),
+              fluidRow(box(DT::dataTableOutput('tabC20'),width = 12)
+              ),
+              fluidRow(box(title = "Best Practices", status = "primary", solidHeader = T,background = "aqua",uiOutput("bestC20")),
+                       box(title = "Denominator as Predictor", status = "primary", solidHeader = T,background = "aqua",plotOutput("regC20")) 
+              )
+      )
+    )
+  )
+)
+
+server <- function(input,output) {
+  #server=FALSE,selection='single'
+  output$tabDMD15 <- DT::renderDataTable({tabDMD15})
+  output$tabC12 <- DT::renderDataTable({tabC12})
+  output$tabC14 <- DT::renderDataTable({tabC14})
+  output$tabC15 <- DT::renderDataTable({tabC15})
+  output$tabC17 <- DT::renderDataTable({tabC17})
+  output$tabC20 <- DT::renderDataTable({tabC20})
+  #Map
+  output$mapDMD15 <- renderLeaflet({mapDMD15})
+  output$mapC12 <- renderLeaflet({mapC12})
+  output$mapC14 <- renderLeaflet({mapC14})
+  output$mapC15 <- renderLeaflet({mapC15})
+  output$mapC17 <- renderLeaflet({mapC17})
+  output$mapC20 <- renderLeaflet({mapC20})
+  #Compliance Histo
+  output$histoDMD15 <- renderPlot({histoDMD15})
+  output$histoC12 <- renderPlot({histoC12})
+  output$histoC14 <- renderPlot({histoC14})
+  output$histoC15 <- renderPlot({histoC15})
+  output$histoC17 <- renderPlot({histoC17})
+  output$histoC20 <- renderPlot({histoC20})
+  #Scatter Plot
+  output$regDMD15 <- renderPlot({scatterDMD15})
+  output$regC12 <- renderPlot({scatterC12})
+  output$regC14 <- renderPlot({scatterC14})
+  output$regC15 <- renderPlot({scatterC15})
+  output$regC17 <- renderPlot({scatterC17})
+  output$regC20 <- renderPlot({scatterC20})
+  #Best Practices 
+  output$bestDMD15 <- bestDMD15
+  output$bestC12 <- bestC12
+  output$bestC14 <- bestC14
+  output$bestC15 <- bestC15
+  output$bestC17 <- bestC17
+  output$bestC20 <- bestC20
+}
+
+shinyApp(ui,server)
+
+```
+
+```{r Maggie UI}
+ui <- dashboardPage(
+  dashboardHeader( title = "Highmark Analytics Project",
+                   dropdownMenu(type = "message",
+                                messageItem(from = "Prof. Kolman", message = "Your homework is due on Thursday", icon = icon("id-card-alt"), time = "22:00")),
+                   dropdownMenu(type = "task",
+                                taskItem(value = 20, color = "aqua", "DMD 51"),
+                                taskItem(value = 0, color = "green", "C 15")
+                   )),
+  
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Dashboard Introduction", tabName = "introduction", icon = icon("dashboard")),
+      menuItem("DMD 15", tabName = "dmd15", icon = icon("stethoscope"), badgeLabel = "Bad", badgeColor = "red"),
+      menuItem("C 12", tabName = "C12", icon = icon("stethoscope"), badgeLabel = "OK", badgeColor = "yellow"),
+      menuItem("C 14", tabName = "c14", icon = icon("stethoscope"), badgeLabel = "OK", badgeColor = "yellow"),
+      menuItem("C 15", tabName = "c15", icon = icon("stethoscope"), badgeLabel = "OK", badgeColor = "yellow")
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      tabItem(tabName = "introduction", h1("About")),
+      tabItem(tabName = "dmd15", h1("DMD15 Statin Use in Persons with Diabetes"),
+              fluidRow(
+                column(12,
+                box(title = "Stats", status = "primary", solidHeader = T, background = "aqua", DT::dataTableOutput('tbl')))),
+              fluidRow(
+                column(6,
+                box(title = "Compliance by Location", status = "primary", solidHeader = T,background = "aqua",leafletOutput("mapDMD15"))),
+                column(6,
+                box(title = "Compliance Histogram", status = "primary", solidHeader = T,background = "aqua",plotOutput("histoDMD15"))
+                )),
+              fluidRow(
+                column(6,
+                box(title = "Best Practices", status = "primary", solidHeader = T,background = "aqua",uiOutput("bestDMD15"))),
+                column(6,
+                box(title = "Denominator as Predictor", status = "primary", solidHeader = T,background = "aqua",plotOutput("plot2")))
+                       )),
+      ###WEIRD STUFF
+           tabItem(tabName = "dmd15pa", h1("Pensylvania")),
+           tabItem(tabName = "dmd15wv", h1("West Virginia")),
+      ##WEIRD STUFF END
+       tabItem(tabName = "C12", h1("Osteoporosis Management in Women who had a Fracture")),
+       tabItem(tabName = "c14", h1("Comprehensive Diabetes Care: Medical Attention for Nephropathy")),
+       tabItem(tabName = "c15", h1("Comprehensive Diabetes Care: HbA1c Control (<=9%) (DYNAMIC)"))
+    
+    )
+  )
+)
+```
+
+```{r Full Width Example}
+ui <- dashboardPage(
+        dashboardHeader(),
+        dashboardSidebar(),
+        dashboardBody(
+          fluidRow( 
+            #this works....
+            column(12, box(title = "box1", width = 12))
+            )
+        )
+      )
+
+server <- function(input, output) {
+}
+```
+
+```{r Polygon Map}
+# <- leaflet() %>% addTiles() %>% addPolygons(data = zip2, stroke=FALSE,weight=2,opacity=1,color="white",smoothFactor=0.3, fillOpacity=0.8,fillColor = ~pal(zip2$Compliance),dashArray="3",highlight = highlightOptions(weight=10,color="#666",dashArray="",fillOpacity=0.6,bringToFront = FALSE),label=labels,labelOptions = labelOptions(style=list("font-weight" = "normal",padding="3px 8px"),textsize="15px",direction="auto")) %>% addCircleMarkers(data = DMD15,weight=1, fillOpacity=1, radius = 2*log10(DMD15$Denominator), clusterOptions = markerClusterOptions(), color = "black", popup = DMD15$practice_Name) %>% addLegend(pal = colorNumeric("Blues",zip2$Compliance), values = zip2$Compliance, opacity = 0.7, title = "Compliance", position = "bottomright")
+```
+
+```{r Working Table With Search}
+ui = fluidPage(DTOutput('tbl'))
+
+server = function(input,output) {
+  output$tbl = renderDT(DMD15Ranked,options=list(lengthChange = FALSE))
+}
+
+shinyApp(ui,server)
+```

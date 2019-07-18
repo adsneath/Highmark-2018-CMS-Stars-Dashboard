@@ -1,0 +1,63 @@
+---
+title: "3-28 Verification"
+author: "Adam Sneath"
+date: "March 28, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(tidyr)
+library(magrittr)
+library(stringr)
+library(sas7bdat)
+knitr::opts_chunk$set(echo = TRUE)
+
+provider <- read.sas7bdat(file = 'C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data/provider_20181229.sas7bdat')
+practice <- read.sas7bdat(file = 'C:/Users/adsne/Desktop/pitt/spring_19/IE1108-1090_HealthSys/Project/Data/tab1_practice_level.sas7bdat')
+
+DMD15 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/DMD15.csv")
+C12 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/C12.csv")
+C14 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/C14.csv")
+C15 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/C15.csv")
+C17 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/C17.csv")
+C20 <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/C20.csv")
+
+DMD15Ranked <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/DMD15Ranked.csv")
+C12Ranked <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/C12Ranked.csv")
+C14Ranked <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/C14Ranked.csv")
+C15Ranked <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/C15Ranked.csv")
+C17Ranked <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/C17Ranked.csv")
+C20Ranked <- read.csv("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/C20Ranked.csv")
+
+```
+
+```{r}
+
+#names(practice)
+#practice %>% filter(is.na(denominator) == TRUE) %>% length()
+#47 denominators equal NA
+
+vect <- c()
+vect2 <- c()
+
+vect[1] <- sum(DMD15$Denominator)
+vect[2] <- sum(C12$Denominator)
+vect[3] <- sum(C14$Denominator)
+vect[4] <- sum(C15$Denominator)
+vect[5] <- sum(C17$Denominator)
+vect[6] <- sum(C20$Denominator)
+vect
+
+#Note: Ranked only includes denominator > 2 for ranking algorithm purposes
+vect2[1] <- sum(DMD15Ranked$Denominator)
+vect2[2] <- sum(C12Ranked$Denominator)
+vect2[3] <- sum(C14Ranked$Denominator)
+vect2[4] <- sum(C15Ranked$Denominator)
+vect2[5] <- sum(C17Ranked$Denominator)
+vect2[6] <- sum(C20Ranked$Denominator)
+vect2
+
+#all(vect,vect2)
+
+```

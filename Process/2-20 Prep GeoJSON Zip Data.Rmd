@@ -1,0 +1,71 @@
+---
+title: "2-16 Interactive Maps"
+author: "Adam Sneath"
+date: "February 16, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(leaflet)
+library(magrittr)
+library(rgdal)
+library(mapview)
+library(dplyr)
+library(spdplyr)
+library(geojsonio)
+library(rmapshaper)
+library(lawn)
+library(RColorBrewer)
+library(leaflet)
+knitr::opts_chunk$set(echo = TRUE)
+zip <- readOGR(dsn="C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/Geo", layer="cb_2017_us_zcta510_500k",verbose=FALSE)
+prac <- read.csv("18-Feb-19_practice_geocoded.csv")
+```
+
+```{r View SpatialPolygonsDataFrame}
+zip
+names(prac)
+```
+
+```{r Filter on Highmark Zips}
+zip_pa <- zip %>% filter(as.integer(levels(zip$GEOID10)[zip$GEOID10]) %in% prac$MAIN_ZIPCODE)
+length(unique(zip_pa$GEOID10))
+length(unique(prac$MAIN_ZIPCODE))
+#looks like 16 Highmark zips weren't found in the geospatial data set, let's find which ones in next chunk or two
+zip_pa
+```
+
+```{r Find Missing Ones}
+zip_pa <- zip_pa %>% arrange(GEOID10)
+prac <- prac %>% arrange(MAIN_ZIPCODE)
+
+zip_pa[1:100,]
+prac[1:100,]
+
+setdiff(prac$MAIN_ZIPCODE,as.numeric(levels(zip_pa$GEOID10)[zip_pa$GEOID10]))
+```
+
+
+```{r Convert to GeoJSON and Reduce Size via simplify}
+zip_json <- geojson_json(zip_pa)
+#the simplify command will "remove the detail information of the geometry that might not make much of the difference especially when you are visualizing the data at high level."
+zip_json_simplified <- ms_simplify(zip_json)
+```
+
+
+```{r}
+## This was a 'rough cut' to literally restrict the zips to a rectangle area around PA, I believe I've actually filtered them down to just the Highmark zips, and will verify with a plot in next chunk 
+# view(lawn_bbox_polygon(c(-81.2,39,-74,42.5)))
+# zip_clipped <- ms_clip(zip_json_simplified,bbox =c(-81.2,39,-74,42.5))
+geojson_write(zip_json_simplified,file = "zip_pa.geojson")
+```
+
+```{r}
+zips <- geojson_read("C:/Users/adsne/Desktop/2019 Spring/Healthcare/Project/Geo/zip_pa.geojson", what = "sp")
+```
+
+```{r}
+pal <- colorNumeric("viridis",zips$rmapshaperid)
+
+zips %>% leaflet() %>% addTiles() %>% addPolygons(stroke = FALSE, smoothFactor = 0.3, fillOpacity = 1, fillColor = ~pal(zips$rmapshaperid))
+```
